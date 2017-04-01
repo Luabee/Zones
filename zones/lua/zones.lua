@@ -349,7 +349,7 @@ else
 			frame.content:Dock(FILL)
 			
 			local w,h = hook.Run("ShowZoneOptions",zone,class,frame.content,id,frame)
-			frame:SizeTo((w or 292)+8,(h or 422)+78, .2)
+			frame:SizeTo((w or 100)+8,(h or 2)+78, .2)
 			frame:MoveTo(ScrW()/2-((w or 292)+8)/2,ScrH()/2-((h or 422)+78)/2, .2)
 		end
 		
@@ -357,7 +357,7 @@ else
 		frame.content:Dock(FILL)
 		
 		local w,h = hook.Run("ShowZoneOptions",zone,class,frame.content,id,frame)
-		frame:SetSize((w or 292)+8,(h or 422)+78)
+		frame:SetSize((w or 100)+8,(h or 2)+78)
 		frame:Center()
 		
 	end
@@ -434,18 +434,18 @@ function zones.PointInPoly(point,poly) //True if point is within a polygon.
 		x1 = point.x,
 		y1 = point.y,
 		x2 = point.x + 10000,
-		y2 = point.y + 10000,
-		intersects = 0
+		y2 = point.y + 10000
 	}
+	local inside = false
 	
 	//Do ray check.
 	for k,v in pairs(lines)do
 		
 		if Intersect(ray,v) then
-			ray.intersects = ray.intersects + 1
+			inside = !inside
 		end
 		
 	end
 	
-	return (ray.intersects % 2) == 1
+	return inside
 end
