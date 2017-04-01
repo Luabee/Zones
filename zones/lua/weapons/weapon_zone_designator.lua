@@ -16,14 +16,19 @@ if CLIENT then
 		weight = 1000,
 		
 	} )
+else
+	concommand.Add("zone_swep",function(p,c,a)
+		if p:IsAdmin() then
+			p:Give("weapon_zone_designator")
+		end
+	end)
 end
 
 if engine.ActiveGamemode() == "terrortown" then
 	SWEP.Base = "weapon_tttbase"
+	SWEP.Kind = WEAPON_EQUIP2
 end
 
-
-SWEP.Kind = WEAPON_EQUIP2
 
 SWEP.NoSights = true
 
@@ -32,7 +37,7 @@ SWEP.Author = "Bobblehead"
 SWEP.Purpose = "Creates zones. Reload for menu. Right click to remove a point/zone."
 
 SWEP.Slot = 5
-SWEP.SlotPos = 6
+SWEP.SlotPos = 5
 
 SWEP.Spawnable = true
 SWEP.AdminOnly = true
@@ -42,7 +47,7 @@ SWEP.ViewModelFOV = 51
 SWEP.ViewModelFlip = false
 SWEP.UseHands = true
 SWEP.ViewModel = "models/weapons/c_toolgun.mdl"
-SWEP.WorldModel = "models/weapons/c_toolgun.mdl"
+SWEP.WorldModel = "models/weapons/w_toolgun.mdl"
 SWEP.AutoSwitchFrom = true
 SWEP.AutoSwitchTo = true
 
@@ -498,7 +503,7 @@ end
 
 function SWEP:ResetTool()
 
-	if self:GetMode() == 1 then
+	if self:GetMode() == 1 and SERVER then
 		local cur = self:GetCurrentPoint()
 		if IsValid(cur) and cur:GetZoneID() == -1 then
 			
@@ -509,7 +514,6 @@ function SWEP:ResetTool()
 			end
 			
 		end
-	elseif self:GetMode() == 2 then
 		
 	end
 	self:SetCurrentPoint(NULL)
