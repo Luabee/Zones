@@ -61,7 +61,6 @@ hook.Add("ScalePlayerDamage","Arena Zone",function(ply, hitgroup, dmginfo)
 	local zone = ply:GetCurrentZone() 
 	if zone then
 		if zone.class == "Arena Zone" then
-			print("scaling")
 			dmginfo:ScaleDamage(zone.DmgMul)
 			
 		end
