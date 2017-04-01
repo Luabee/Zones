@@ -1,1 +1,31 @@
-Zones
+# ZONES - by Bobbleheadbob #
+**WARNING: If you edit any of these files, make them use a different namespace. Multiple scripts may depend on this library so modifying it can break other scripts.**
+If you have a universially beneficial change, please consider making a pull request. :)
+
+## Purpose: ##
+For easy in-game designation of persistent polygonal zones which are used by any script.
+
+## How to Use: ##
+All zones are saved in zones.List; see an example below.
+Zone creation is handled with weapon_zone_designator and ent_zone_point, but can be done in code as well.
+When a zone is created, changed, or removed all zones are synced to clients. When clients join they are also synced.
+Any extra details can be saved to a zone. Everything is written to a txt file and is persistent to the map.
+
+Since multiple scripts might use the zones system, don't assume that every zone is related to your script.
+To register a zone class, use zones.RegisterClass(class, color); use a unique string like "Scriptname Room".
+When a zone class is registered, admins can use the tool to create new ones.
+When a new zone is created, the "ShowZoneOptions" hook is called clientside. See the hook below for documentation.
+
+Use zones.FindByClass() to find all zones which are of a given class.
+Use ply:GetCurrentZone() to find the zone that a player is standing in.
+
+## Installation: ##
+This is a shared file so include it in any shared environment. Also include ent_zone_point and weapon_zone_designator as a shared ent and weapon.
+You should not put this file directly in lua/autorun.
+
+## License: ##
+YOU MAY use/edit this however you want. 
+YOU MAY distribute this with other scripts whether they are paid or free.
+YOU MAY NOT distribute this on its own. It must accompany another script.
+
+*Enjoy! ~Bobbleheadbob*
