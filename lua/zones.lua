@@ -1,5 +1,5 @@
 
-local version = 1.12 -- Older versions will not run if a newer version is used in another script.
+local version = 1.13 -- Older versions will not run if a newer version is used in another script.
 --[[
 	ZONES - by Bobbleheadbob
 		WARNING: If you edit any of these files, make them use a different namespace. Multiple scripts may depend on this library so modifying it can break other scripts.
@@ -199,9 +199,10 @@ if SERVER then
 		zones.CalcBounds(zone)
 		
 		zones.List[id] = zone
+		hook.Run("OnZoneCreated",zone,zone.class,id)
+		
 		zones.Sync()
 		
-		hook.Run("OnZoneCreated",zone,zone.class,id)
 		
 		return zone, id
 		
@@ -222,6 +223,7 @@ if SERVER then
 	end
 	
 	function zones.Remove(id)
+		hook.Run("OnZoneRemoved",zones.List[id],zones.List[id].class,id)
 		zones.List[id] = nil
 		zones.Sync()
 	end
@@ -280,6 +282,8 @@ if SERVER then
 		
 		zones.Remove(from)
 		
+		hook.Run("OnZoneChanged",zto,zto.class,to)
+		
 		zones.Sync()
 		
 	end
@@ -304,6 +308,8 @@ if SERVER then
 		local id = table.maxn(zones.List)+1
 		zones.List[id] = new
 		
+		hook.Run("OnZoneSplit",new,new.class,id,zone,id)
+		
 		zones.Sync()
 		
 		return new,id
@@ -324,10 +330,10 @@ if SERVER then
 		zones.Sync()
 	end
 	
-	hook.Add("Initialize","claim_load",function()
+	hook.Add("InitPostEntity","zones_load",function()
 		zones.LoadZones()
 	end)
-	hook.Add("PlayerInitialSpawn","claim_sync",function(ply)
+	hook.Add("PlayerInitialSpawn","zones_sync",function(ply)
 		zones.Sync(ply)
 	end)
 	

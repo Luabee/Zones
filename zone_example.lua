@@ -146,7 +146,7 @@ end)
 	end)
 	
 	-- Example of the OnZoneLoaded hook.
-	-- This hook is called as a zone is loaded into the game, typically on map startup. Only called serverside.
+	-- This hook is called as a zone is loaded into the game, typically on map startup. Good for things like converting ents.GetMapCreatedEntity() to Entity() Only called serverside.
 	-- Arguments are:
 	--	zone	- The full zone table of the zone we are editing.
 	--	class	- The class of the zone.
