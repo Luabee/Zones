@@ -185,15 +185,18 @@ if SERVER then
 	end
 
 	local sync = false
+	local syncply
 	function zones.Sync(ply)
 		sync = true
+		syncply = ply
 	end
 	hook.Add("Tick","zones_sync",function()
 		if sync then
 			net.Start("zones_sync")
 				net.WriteTable(zones.List)
-			if ply then
-				net.Send(ply)
+			if syncply then
+				net.Send(syncply)
+				syncply = nil
 			else
 				net.Broadcast()
 			end
