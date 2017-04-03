@@ -87,7 +87,7 @@ zones.List = zones.List or {}
 	}
 	
 	-- Example of the ShowZoneOptions hook.
-	-- This hook lets you build your custom VGUI for your zone class which will pop up when players make a new zone or edit an existing one.
+	-- This hook lets you build your custom VGUI for your zone class which will pop up when players make a new zone or edit an existing one. Clientside.
 	-- Arguments are:
 	--	zone	- The full zone table of the zone we are editing.
 	--	class	- The class of the zone.
@@ -114,7 +114,7 @@ zones.List = zones.List or {}
 	end)
 	
 	-- Example of the OnZoneCreated hook.
-	-- This hook lets you build your custom VGUI for your zone class which will pop up when players make a new zone or edit an existing one.
+	-- This hook lets you set up your newly created zones with default values. Only called serverside.
 	-- Arguments are:
 	--	zone	- The full zone table of the zone we are editing.
 	--	class	- The class of the zone.
