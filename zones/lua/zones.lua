@@ -16,7 +16,8 @@ local version = 1.1 -- Older versions will not run if a newer version is used in
 		Since multiple scripts might use the zones system, don't assume that every zone is related to your script.
 		To register a zone class, use zones.RegisterClass(class, color); use a unique string like "Scriptname Room".
 		When a zone class is registered, admins can use the tool to create new ones.
-		When a new zone is created, the "ShowZoneOptions" hook is called clientside. See the hook below for documentation.
+		When a new zone is created, the "OnZoneCreated" hook is called serverside. See the hook below for documentation.
+		When a player edits a zone's properties, the "ShowZoneOptions" hook is called clientside. See the hook below.
 		
 		Use zones.FindByClass() to find all zones which are of a given class.
 		Use ply:GetCurrentZone() to find the zone that a player is standing in.
@@ -26,7 +27,7 @@ local version = 1.1 -- Older versions will not run if a newer version is used in
 		You should not put this file directly in lua/autorun.
 		
 	License:
-		YOU MAY use/edit this however you want. 
+		YOU MAY use/edit this however you want, as long as you give proper attribution.
 		YOU MAY distribute this with other scripts whether they are paid or free.
 		YOU MAY NOT distribute this on its own. It must accompany another script.
 		
@@ -49,8 +50,10 @@ end
 zones = zones or {}
 zones.version = version
 
+zones.Classes = zones.Classes or {}
 zones.List = zones.List or {}
---[[ --Example of a zone.
+--[[ 
+	--Example structure of a zone.
 	zones.List[1] = { -- 1 is the zone ID. Automatically assigned.
 		
 		-- points, height, bounds, and class are reserved.
@@ -82,11 +85,49 @@ zones.List = zones.List or {}
 		-- Zones can have any other values saved to them. If you save a player, make sure to save it as a steamid.
 		
 	}
+	
+	-- Example of the ShowZoneOptions hook.
+	-- This hook lets you build your custom VGUI for your zone class which will pop up when players make a new zone or edit an existing one.
+	-- Arguments are:
+	--	zone	- The full zone table of the zone we are editing.
+	--	class	- The class of the zone.
+	--	DPanel	- The DPanel which your VGUI elements should be parented to.
+	--	zoneID	- The ID of the zone.
+	--	DFrame	- The DFrame which holds it all. Not likely you will need this but it's here anyway.
+	-- You must return:
+	--	width, height; How large you want the DPanel to be. It will automatically resize.
+	hook.Add("ShowZoneOptions","hookname_unique",function(zone,class,DPanel,zoneID,DFrame)
+		if class == "Baby Got Back" then --always check class.
+			local w,h = 80, 100
+			
+			local mul = vgui.Create("DNumberWang",DPanel) --parent to the panel.
+			mul:SetPos(5,10)
+			mul:SetValue(zone.onlyIfShes) --The default value should be set in the OnZoneCreated hook.
+			mul:SetDecimals(1)
+			mul:SetMinMax(0,10)
+			function mul:OnValueChanged(new)
+				-- Do your stuff here.
+			end
+			
+			return w, h 
+		end
+	end)
+	
+	-- Example of the OnZoneCreated hook.
+	-- This hook lets you build your custom VGUI for your zone class which will pop up when players make a new zone or edit an existing one.
+	-- Arguments are:
+	--	zone	- The full zone table of the zone we are editing.
+	--	class	- The class of the zone.
+	--	zoneID	- The ID of the zone.
+	hook.Add("OnZoneCreated","hookname_unique",function(zone,class,zoneID)	
+		if class == "Baby Got Back" then --always check class.
+			zone.waistSize = Vector(36,24,36)
+			zone.onlyIfShes = "5'3\""
+		end
+	end)
 ]]
 
-zones.Classes = zones.Classes or {}
-
-//Common interface functions
+//Common interface functions:
 
 -- Registers a zone class which can then be created using weapon_zone_designator
 function zones.RegisterClass(class,color)
@@ -157,6 +198,7 @@ function zones.GetID(zone)
 end
 
 
+//Getting into the meat of the API:
 if SERVER then
 	util.AddNetworkString("zones_sync")
 	util.AddNetworkString("zones_class")
