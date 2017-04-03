@@ -168,6 +168,14 @@ function SWEP:PrimaryAttack()
 			if !tr.HitWorld and IsValid(tr.Entity) and tr.Entity:GetClass() == "ent_zone_point" then
 				if IsValid(zones.optionsFrame) then return end
 				zones.ShowOptions(tr.Entity:GetZoneID())
+			else
+				
+				local _,id = self.Owner:GetCurrentZone(GetConVarNumber("zone_filter") == 1 and self:GetZoneClass())
+				if IsValid(zones.optionsFrame) then return end
+				if id != -1 then
+					zones.ShowOptions(id)
+				end
+				
 			end
 			
 		end
