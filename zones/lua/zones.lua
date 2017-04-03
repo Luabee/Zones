@@ -1,5 +1,5 @@
 
-local version = 1.0 -- Older versions will not run if a newer version is used in another script.
+local version = 1.1 -- Older versions will not run if a newer version is used in another script.
 --[[
 	ZONES - by Bobbleheadbob
 		WARNING: If you edit any of these files, make them use a different namespace. Multiple scripts may depend on this library so modifying it can break other scripts.
@@ -53,7 +53,7 @@ zones.List = zones.List or {}
 --[[ --Example of a zone.
 	zones.List[1] = { -- 1 is the zone ID. Automatically assigned.
 		
-		-- points, height, and class are reserved.
+		-- points, height, bounds, and class are reserved.
 		points = { 	--List of areas in 3D space which define the zone.
 			{		--each area is a list of points. Areas should intersect with one another but they don't have to.
 				Vector(),
@@ -67,6 +67,16 @@ zones.List = zones.List or {}
 			},
 		},
 		height = {200,100},	 -- How tall each area of the zone is. Each entry corresponds to an area listed above.
+		bounds = { 			 --List of the min/max points in each area. Used to speed up point-in-zone testing. These are calculated when the zone is created/changed.
+			{
+				mins=Vector(),
+				maxs=Vector(),
+			},
+			{
+				mins=Vector(),
+				maxs=Vector(),
+			},
+		},
 		class = "GMaps Area", -- Zones with different classes are created and treated separately. Use zones.RegisterClass to create a new one.
 		
 		-- Zones can have any other values saved to them. If you save a player, make sure to save it as a steamid.
@@ -98,7 +108,9 @@ end
 function zones.GetZoneAt(pos,class) --works like above, except uses any point.
 	for k,zone in pairs(zones.List) do
 		if class and class != zone.class then continue end
+		
 		for k1, points in pairs(zone.points) do
+			if not pos:WithinAABox(zone.bounds[k1].mins,zone.bounds[k1].maxs) then continue end
 			if zones.PointInPoly(pos,points) then
 				local z = points[1].z
 				if pos.z >= z and pos.z < z + zone.height[k1] then
@@ -114,6 +126,7 @@ function zones.GetZonesAt(pos,class) --works like above, except uses any point.
 	for k,zone in pairs(zones.List) do
 		if class and class != zone.class then continue end
 		for k1, points in pairs(zone.points) do
+			if not pos:WithinAABox(zone.bounds[k1].mins,zone.bounds[k1].maxs) then continue end
 			if zones.PointInPoly(pos,points) then
 				local z = points[1].z
 				if pos.z >= z and pos.z < z + zone.height[k1] then
@@ -138,6 +151,11 @@ function zones.FindByClass(class)
 	return tbl
 end
 
+--Returns the numerical ID of a zone.
+function zones.GetID(zone)
+	return table.KeyFromValue(zones.List,zone)
+end
+
 
 if SERVER then
 	util.AddNetworkString("zones_sync")
@@ -157,6 +175,13 @@ if SERVER then
 	function zones.LoadZones()
 		local tbl = file.Read("zones/"..game.GetMap():gsub("_","-"):lower()..".txt", "DATA")
 		zones.List = tbl and util.JSONToTable(tbl) or {}
+		
+		//Update legacy files:
+		for k,v in pairs(zones.List)do
+			if not v.bounds then
+				zones.CalcBounds(v)
+			end
+		end
 	end
 
 	local sync = false
@@ -181,19 +206,22 @@ if SERVER then
 		local zone = {
 			points = {{}}, --only 1 area when creating a new zone.
 			height = {ent:GetTall()},
-			class = ent:GetZoneClass()
+			class = ent:GetZoneClass(),
+			bounds = {}
 		}
 		
 		local id = table.maxn(zones.List) + 1
 		local cur = ent
 		repeat
-			
-			zone.points[1][#zone.points[1]+1] = cur:GetPos() - Vector(0,0,2)
+			local pos = cur:GetPos() - Vector(0,0,2)
+			zone.points[1][#zone.points[1]+1] = pos
 			
 			cur:SetZoneID(id)
 			cur = cur:GetNext()
 			
 		until (cur == ent)
+		
+		zones.CalcBounds(zone)
 		
 		zones.List[id] = zone
 		zones.Sync()
@@ -202,6 +230,20 @@ if SERVER then
 		
 		return zone, id
 		
+	end
+	
+	function zones.CalcBounds(zone)
+		zone.bounds = {}
+		for areanum,area in pairs(zone.points)do
+			local mins,maxs = Vector(10000000,10000000,area[1].z), Vector(-10000000,-10000000,area[1].z + zone.height[areanum])
+			for k,pos in pairs(area) do
+				maxs.x = math.max(pos.x, maxs.x)
+				maxs.y = math.max(pos.y, maxs.y)
+				mins.x = math.min(pos.x, mins.x)
+				mins.y = math.min(pos.y, mins.y)
+			end
+			zone.bounds[areanum] = {mins=mins,maxs=maxs}
+		end
 	end
 	
 	function zones.Remove(id)
@@ -259,6 +301,7 @@ if SERVER then
 		
 		table.Add(zto.points, zfrom.points)
 		table.Add(zto.height, zfrom.height)
+		table.Add(zto.bounds, zfrom.bounds)
 		
 		zones.Remove(from)
 		
@@ -268,10 +311,11 @@ if SERVER then
 	
 	function zones.Split(id,areanum)
 		local zone = zones.List[id]
-		local pts, h = zone.points[areanum], zone.height[areanum]
+		local pts, h, bound = zone.points[areanum], zone.height[areanum], zone.bounds[areanum]
 		
 		table.remove(zone.points,areanum)
 		table.remove(zone.height,areanum)
+		table.remove(zone.bounds,areanum)
 		
 		if #zone.points == 0 then
 			zones.Remove(id)
@@ -280,6 +324,7 @@ if SERVER then
 		local new = table.Copy(zone)
 		new.points = {pts}
 		new.height = {h}
+		new.bounds = {bound}
 		
 		local id = table.maxn(zones.List)+1
 		zones.List[id] = new

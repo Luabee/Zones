@@ -159,6 +159,7 @@ function SWEP:PrimaryAttack()
 			until ( next == curr )
 			
 			zones.List[curr:GetZoneID()].height[curr:GetAreaNumber()] = curr:GetTall()
+			zones.CalcBounds(zones.List[id])
 			
 			self:SetCurrentPoint(NULL)
 			
@@ -210,7 +211,11 @@ function SWEP:PrimaryAttack()
 				n = n:GetNext()
 			until (n == new)
 			
+			
 			zones.List[id].points[areanum] = pts
+			
+			zones.CalcBounds(zones.List[id])
+			
 			zones.Sync()
 			
 		end
@@ -295,6 +300,9 @@ function SWEP:SecondaryAttack()
 			until ( next == curr )
 			
 			zones.List[curr:GetZoneID()].height[curr:GetAreaNumber()] = curr:GetTall()
+			zones.CalcBounds(zones.List[curr:GetZoneID()])
+			
+			zones.Sync()
 			
 			self:SetCurrentPoint(NULL)
 			
@@ -340,6 +348,9 @@ function SWEP:SecondaryAttack()
 				until (n == next)
 				
 				zones.List[id].points[areanum] = pts
+				
+				zones.CalcBounds(zones.List[id])
+				
 				zones.Sync()
 				
 				self:SetCurrentPoint(last)
