@@ -13,8 +13,8 @@ For easy in-game designation of persistent polygonal zones which are used by any
 
 - Since multiple scripts might use the zones system, don't assume that every zone is related to your script.
 - To register a zone class, use zones.RegisterClass(class, color); use a unique string like "Scriptname Room".
-- When a zone class is registered, admins can use the tool to create new ones.
-- When a new zone is created, the "ShowZoneOptions" hook is called clientside. See the hook for documentation.
+- When a new zone is created, the "OnZoneCreated" hook is called serverside.
+- When a player edits a zone's properties, the "ShowZoneOptions" hook is called clientside.
 
 - Use zones.FindByClass() to find all zones which are of a given class.
 - Use ply:GetCurrentZone() to find the zone that a player is standing in.
