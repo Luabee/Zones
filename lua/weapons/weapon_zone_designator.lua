@@ -121,8 +121,13 @@ end
 
 function SWEP:DrawHUD()
 	local z,id = LocalPlayer():GetCurrentZone(GetConVarNumber("zone_filter") == 1 and self:GetZoneClass() or nil)
-    z = z and z.class.."(# "..id..")" or "None"
-    draw.SimpleText("Current Zone: "..z, "DermaLarge", 100,100)
+    z = z and z.class.."(# "..id..")" or "NONE"
+	surface.SetFont("DermaLarge")
+	local w = math.max(360,surface.GetTextSize("Current Zone: "..z)+40)
+	draw.RoundedBox(8,ScrW()/2-w/2,ScrH()-160,w,100,Color(0,0,0,150))
+    draw.SimpleText("Current Zone: "..z, "DermaLarge", ScrW()/2,ScrH()-130,color_white,TEXT_ALIGN_CENTER,TEXT_ALIGN_CENTER)
+	draw.SimpleText("Hold "..input.LookupBinding("+reload"):upper().." to change modes", "DermaLarge",ScrW()/2,ScrH()-90,color_white,TEXT_ALIGN_CENTER,TEXT_ALIGN_CENTER)
+	
 end
 
 function SWEP:PrimaryAttack()
