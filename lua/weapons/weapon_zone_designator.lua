@@ -159,7 +159,7 @@ function SWEP:PrimaryAttack()
 			until ( next == curr )
 			
 			zones.List[curr:GetZoneID()].height[curr:GetAreaNumber()] = curr:GetTall()
-			zones.CalcBounds(zones.List[id])
+			zones.CalcBounds(zones.List[curr:GetZoneID()])
 			
 			self:SetCurrentPoint(NULL)
 			
