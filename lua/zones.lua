@@ -1,5 +1,5 @@
 
-local version = 1.11 -- Older versions will not run if a newer version is used in another script.
+local version = 1.12 -- Older versions will not run if a newer version is used in another script.
 --[[
 	ZONES - by Bobbleheadbob
 		WARNING: If you edit any of these files, make them use a different namespace. Multiple scripts may depend on this library so modifying it can break other scripts.
@@ -327,7 +327,16 @@ if SERVER then
 				v:SetZoneClass(class)
 			end
 		end
-		zones.List[id].class = class
+		
+		local zone,new = zones.List[id],{}
+		new.points = zone.points
+		new.height = zone.height
+		new.bounds = zone.bounds
+		new.class = class
+		
+		zones.List[id] = new
+		
+		hook.Run("OnZoneCreated",new,class,id)
 		
 		zones.Sync()
 	end)
