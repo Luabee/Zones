@@ -310,6 +310,20 @@ if SERVER then
 		
 	end
 	
+	function zones.ChangeClass(id,class)
+		local zone,new = zones.List[id],{}
+		new.points = zone.points
+		new.height = zone.height
+		new.bounds = zone.bounds
+		new.class = class
+		
+		zones.List[id] = new
+		
+		hook.Run("OnZoneCreated",new,class,id)
+		
+		zones.Sync()
+	end
+	
 	hook.Add("Initialize","claim_load",function()
 		zones.LoadZones()
 	end)
@@ -328,17 +342,8 @@ if SERVER then
 			end
 		end
 		
-		local zone,new = zones.List[id],{}
-		new.points = zone.points
-		new.height = zone.height
-		new.bounds = zone.bounds
-		new.class = class
+		zones.ChangeClass(id,class)
 		
-		zones.List[id] = new
-		
-		hook.Run("OnZoneCreated",new,class,id)
-		
-		zones.Sync()
 	end)
 	
 else
