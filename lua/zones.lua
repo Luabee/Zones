@@ -1,5 +1,5 @@
 
-local version = 1.131 -- Older versions will not run if a newer version is used in another script.
+local version = 1.14 -- Older versions will not run if a newer version is used in another script.
 --[[
 	ZONES - by Bobbleheadbob
 		WARNING: If you edit any of these files, make them use a different namespace. Multiple scripts may depend on this library so modifying it can break other scripts.
@@ -467,38 +467,30 @@ local function Intersect(line1, line2)
 end
 function zones.PointInPoly(point,poly) //True if point is within a polygon.
 	
-	//Check validity
-	local lines = {}
-	local pcount = #poly
-	for k1=1, pcount do
-	
-		local k2 = k1+1
-		if k2 > pcount then
-			k2 = 1
-		end
-		
-		lines[k1] = {
-			x1 = poly[k1].x,
-			y1 = poly[k1].y,
-			x2 = poly[k2].x,
-			y2 = poly[k2].y,
-			valid = true
-		}
-		
-	end
-	
 	local ray = {
 		x1 = point.x,
 		y1 = point.y,
-		x2 = point.x + 10000,
-		y2 = point.y + 10000
+		x2 = 100000,
+		y2 = 100000
 	}
 	local inside = false
 	
-	//Do ray check.
-	for k,v in pairs(lines)do
+	//Perform ray test
+	for k1, v in pairs(poly) do
 		
-		if Intersect(ray,v) then
+		local v2 = poly[k1+1]
+		if not v2 then
+			v2 = poly[1]
+		end
+		
+		local line = {
+			x1 = v.x,
+			y1 = v.y,
+			x2 = v2.x,
+			y2 = v2.y
+		}
+		
+		if Intersect(ray,line) then
 			inside = !inside
 		end
 		
