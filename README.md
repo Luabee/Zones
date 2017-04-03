@@ -23,9 +23,4 @@ For easy in-game designation of persistent polygonal zones which are used by any
 - This is a shared file so include it in any shared environment. Also include ent_zone_point and weapon_zone_designator as a shared ent and weapon.
 - You should not put this file directly in lua/autorun.
 
-## License: ##
-- YOU MAY use/edit this however you want. 
-- YOU MAY distribute this with other scripts whether they are paid or free.
-- YOU MAY NOT distribute this on its own. It must accompany another script.
-
 *Enjoy! ~Bobbleheadbob*
