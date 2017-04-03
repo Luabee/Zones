@@ -332,7 +332,7 @@ function SWEP:SecondaryAttack()
 				until ( next == tr.Entity )
 				
 				self:SetCurrentPoint(tr.Entity)
-			elseif tr.HitWorld then
+			else
 				local z, id = self.Owner:GetCurrentZone(GetConVarNumber("zone_filter") == 1 and self:GetZoneClass())
 				if id != -1 then
 					
@@ -423,41 +423,100 @@ end
 
 function SWEP:PlacePoint() --mode == 1
 	local tr = self.Owner:GetEyeTrace()
+	local curr = self:GetCurrentPoint()
+	
 	if tr.HitWorld then
 		
-		local next = ents.Create("ent_zone_point")
+		--fill the wall.
+		if self.Owner:KeyDown(IN_USE) and tr.HitNormal.z == 0 then 
+			
+			local left,right = self:GetWallFill(tr)
+			
+			if IsValid(curr) then
+				local next = ents.Create("ent_zone_point")
+				
+				local p = curr:GetPos()
+				local pos
+				-- if left:DistToSqr(p) > right:DistToSqr(p) then
+				if left:DistToSqr(tr.HitPos) < right:DistToSqr(tr.HitPos) then
+					left.z = p.z
+					pos = left
+				else
+					right.z = p.z
+					pos = right
+				end
+				
+				next:SetPos(pos)
+				curr:SetNext(next)
+				
+				next.LastPoint = curr
+				self:SetCurrentPoint(next)
+				next:SetTall(self:GetTall())
+				next:SetZoneClass(self:GetZoneClass())
+				next:SetZoneID(-1)
+				next:SetAreaNumber(1)
+				next:Spawn()
+			else
+				local pos = util.TraceLine({start=left,endpos=left+Vector(0,0,-2000),filter=self.Owner}).HitPos
+				
+				local ceil = util.TraceLine({start=pos,endpos=pos+Vector(0,0,2000),filter=self.Owner})
+				if ceil.Hit and !ceil.HitSky then
+					local height = math.floor(ceil.Fraction * 2000)
+					self.Owner:ConCommand("zone_tall "..height)
+					self:SetTall(height)
+				end
+				
+				local next = ents.Create("ent_zone_point")
+				
+				next:SetPos(pos-Vector(0,0,1))
+				next.LastPoint = curr
+				self:SetCurrentPoint(next)
+				next:SetTall(self:GetTall())
+				next:SetZoneClass(self:GetZoneClass())
+				next:SetZoneID(-1)
+				next:SetAreaNumber(1)
+				next:Spawn()
+			end
+			
+			
+			
+		else --place a point normally
 		
-		if IsValid(self:GetCurrentPoint()) then
-			local p = self:GetCurrentPoint():GetPos()
-			tr.HitPos.z = p.z
-			next:SetPos(tr.HitPos)
-			self:GetCurrentPoint():SetNext(next)
-			-- self:GetCurrentPoint():DeleteOnRemove(next)
-		else
-			next:SetPos(tr.HitPos+Vector(0,0,1))
+			local next = ents.Create("ent_zone_point")
+			
+			if IsValid(curr) then
+				local p = curr:GetPos()
+				tr.HitPos.z = p.z
+				next:SetPos(tr.HitPos)
+				curr:SetNext(next)
+			else
+				next:SetPos(tr.HitPos+Vector(0,0,1))
+			end
+			
+			next.LastPoint = curr
+			self:SetCurrentPoint(next)
+			next:SetTall(self:GetTall())
+			next:SetZoneClass(self:GetZoneClass())
+			next:SetZoneID(-1)
+			next:SetAreaNumber(1)
+			next:Spawn()
+			
 		end
 		
-		next.LastPoint = self:GetCurrentPoint()
-		self:SetCurrentPoint(next)
-		next:SetTall(self:GetTall())
-		next:SetZoneClass(self:GetZoneClass())
-		next:SetZoneID(-1)
-		next:SetAreaNumber(1)
-		next:Spawn()
 		
-	elseif tr.Entity:IsValid() and tr.Entity:GetClass() == "ent_zone_point" and tr.Entity != self:GetCurrentPoint() then
-		if IsValid(self:GetCurrentPoint()) then
+	elseif tr.Entity:IsValid() and tr.Entity:GetClass() == "ent_zone_point" and tr.Entity != curr then
+		if IsValid(curr) then
 			local next = tr.Entity
 			if !IsValid(next.LastPoint) then
 			
-				self:GetCurrentPoint():SetNext(next)
+				curr:SetNext(next)
 				
 				if IsValid(next:GetNext()) then //we've come full circle.
 					
-					next.LastPoint = self:GetCurrentPoint()
+					next.LastPoint = curr
 					
-					local id = select(2,zones.CreateZoneFromPoint(self:GetCurrentPoint()))
-					-- self:GetCurrentPoint():DeleteOnRemove(next)
+					local id = select(2,zones.CreateZoneFromPoint(curr))
+					-- curr:DeleteOnRemove(next)
 					self:SetCurrentPoint(NULL)
 					
 					local o = self.Owner
@@ -474,6 +533,61 @@ function SWEP:PlacePoint() --mode == 1
 		
 		
 	end
+end
+
+function SWEP:GetWallFill(tr)
+	local hitpos,norm = tr.HitPos,tr.HitNormal
+	
+	local up = Vector(0,0,1)
+	local left = norm:Cross(up)
+	local right = -left
+	local curleft,curright = hitpos+norm, hitpos+norm
+	
+	local trace = {filter=self.Owner}
+	local wall = {filter=self.Owner}
+	local dist = 2
+	for i=1, 1000, dist do --scan left.
+		trace.start = curleft
+		trace.endpos = curleft + dist*left
+		local L = util.TraceLine(trace)
+		curleft = trace.endpos
+		
+		if L.Hit then 
+			curleft = L.HitPos
+			break
+		else
+			wall.start = curleft
+			wall.endpos = curleft - norm*2
+			if not util.TraceLine(wall).Hit then
+				-- curleft = curleft - left
+				break
+			end
+		end
+		
+	end
+	
+	for i=1, 1000, dist do --scan right.
+		trace.start = curright
+		trace.endpos = curright + dist*right
+		local r = util.TraceLine(trace)
+		curright = trace.endpos
+		
+		if r.Hit then
+			curleft = r.HitPos
+			break
+		else
+			wall.start = curright
+			wall.endpos = curright - norm*2
+			if not util.TraceLine(wall).Hit then
+				-- curright = curright - right
+				break
+			end
+		end
+		
+	end
+	
+	
+	return curleft, curright
 end
 
 function SWEP:MergeZones()
