@@ -1,5 +1,5 @@
 
-local version = 1.13 -- Older versions will not run if a newer version is used in another script.
+local version = 1.131 -- Older versions will not run if a newer version is used in another script.
 --[[
 	ZONES - by Bobbleheadbob
 		WARNING: If you edit any of these files, make them use a different namespace. Multiple scripts may depend on this library so modifying it can break other scripts.
@@ -38,12 +38,23 @@ local version = 1.13 -- Older versions will not run if a newer version is used i
 local table, math, Vector, pairs, ipairs, ents = table, math, Vector, pairs, ipairs, ents
 
 if zones then
+	local diff = math.abs(math.floor(version)-math.floor(zones.version)) > 0
+	if diff then
+		ErrorNoHalt("WARNING! Two scripts use VERY different versions of the zones API. Please tell one of them to update their script!\n")
+	end
 	if zones.version > version then
+		if diff then
+			print("The outdated version of zones is located at: "..debug.getinfo(1,"S").short_src)
+		end
 		print("A new version of zones exists. Using version "..zones.version.." instead of "..version)
 		return
 	elseif zones.version < version then
+		if diff then
+			print("The outdated version of zones is located at: "..debug.getinfo(zones.RegisterClass,"S").short_src)
+		end
 		print("A new version of zones exists. Using version "..version.." instead of "..zones.version)
 	end
+	
 else
 	print("Loaded zones " ..version)
 end
