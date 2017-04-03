@@ -376,6 +376,7 @@ else
 		local class = zone.class
 		
 		local frame = vgui.Create("DFrame")
+		zones.optionsFrame = frame
 		frame:MakePopup()
 		frame:SetTitle("Zone Settings")
 		

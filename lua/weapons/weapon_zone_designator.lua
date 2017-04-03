@@ -166,6 +166,7 @@ function SWEP:PrimaryAttack()
 		elseif CLIENT then
 			local tr = self.Owner:GetEyeTrace()
 			if !tr.HitWorld and IsValid(tr.Entity) and tr.Entity:GetClass() == "ent_zone_point" then
+				if IsValid(zones.optionsFrame) then return end
 				zones.ShowOptions(tr.Entity:GetZoneID())
 			end
 			
