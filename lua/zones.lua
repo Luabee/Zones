@@ -1,5 +1,5 @@
 
-local version = 1.1 -- Older versions will not run if a newer version is used in another script.
+local version = 1.11 -- Older versions will not run if a newer version is used in another script.
 --[[
 	ZONES - by Bobbleheadbob
 		WARNING: If you edit any of these files, make them use a different namespace. Multiple scripts may depend on this library so modifying it can break other scripts.
@@ -16,8 +16,9 @@ local version = 1.1 -- Older versions will not run if a newer version is used in
 		Since multiple scripts might use the zones system, don't assume that every zone is related to your script.
 		To register a zone class, use zones.RegisterClass(class, color); use a unique string like "Scriptname Room".
 		When a zone class is registered, admins can use the tool to create new ones.
-		When a new zone is created, the "OnZoneCreated" hook is called serverside. See the hook below for documentation.
-		When a player edits a zone's properties, the "ShowZoneOptions" hook is called clientside. See the hook below.
+		When a new zone is created, the "OnZoneCreated" hook is called serverside. See the example file for documentation.
+		When a zone is loaded into the game, the "OnZoneLoaded" hook is called serverside. See the example file for documentation.
+		When a player edits a zone's properties, the "ShowZoneOptions" hook is called clientside. See the example file for documentation.
 		
 		Use zones.FindByClass() to find all zones which are of a given class.
 		Use ply:GetCurrentZone() to find the zone that a player is standing in.
@@ -52,6 +53,7 @@ zones.version = version
 
 zones.Classes = zones.Classes or {}
 zones.List = zones.List or {}
+
 
 //Common interface functions:
 
@@ -149,6 +151,8 @@ if SERVER then
 			if not v.bounds then
 				zones.CalcBounds(v)
 			end
+			
+			hook.Run("OnZoneLoaded",v,v.class,k)
 		end
 	end
 

@@ -144,5 +144,17 @@ end)
 			zone.onlyIfShes = "5'3\""
 		end
 	end)
+	
+	-- Example of the OnZoneLoaded hook.
+	-- This hook is called as a zone is loaded into the game, typically on map startup. Only called serverside.
+	-- Arguments are:
+	--	zone	- The full zone table of the zone we are editing.
+	--	class	- The class of the zone.
+	--	zoneID	- The ID of the zone.
+	hook.Add("OnZoneLoaded","hookname_unique",function(zone,class,zoneID)
+		if class == "Baby Got Back" then --always check class.
+			zone.owner = Entity(1)
+		end
+	end)
 ]]
 
