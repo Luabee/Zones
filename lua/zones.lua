@@ -232,7 +232,7 @@ if SERVER then
 			zone.bounds[areanum] = {mins=mins,maxs=maxs}
 		end
 		if not newZone then
-			hook.Run("OnZoneChanged",zones.List[id],zones.List[id].class,id)
+			hook.Run("OnZoneChanged",zone,zone.class,zones.GetID(zone))
 		end
 	end
 	
@@ -401,6 +401,7 @@ else
 			
 			frame.content = vgui.Create("DPanel",frame)
 			frame.content:Dock(FILL)
+			frame.content:DockPadding(5,5,5,5)
 			
 			local w,h = hook.Run("ShowZoneOptions",zone,class,frame.content,id,frame)
 			frame:SizeTo((w or 100)+8,(h or 2)+78, .2)
@@ -409,6 +410,7 @@ else
 		
 		frame.content = vgui.Create("DPanel",frame)
 		frame.content:Dock(FILL)
+		frame.content:DockPadding(5,5,5,5)
 		
 		local w,h = hook.Run("ShowZoneOptions",zone,class,frame.content,id,frame)
 		frame:SetSize((w or 100)+8,(h or 2)+78)
