@@ -282,7 +282,7 @@ if SERVER then
 		
 		zones.Remove(from)
 		
-		hook.Run("OnZoneChanged",zto,zto.class,to)
+		hook.Run("OnZoneMerged",zto,zto.class,to,zfrom,zfrom.class,from)
 		
 		zones.Sync()
 		
