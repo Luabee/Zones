@@ -332,6 +332,26 @@ function SWEP:SecondaryAttack()
 				until ( next == tr.Entity )
 				
 				self:SetCurrentPoint(tr.Entity)
+			elseif tr.HitWorld then
+				local z, id = self.Owner:GetCurrentZone(GetConVarNumber("zone_filter") == 1 and self:GetZoneClass())
+				if id != -1 then
+					
+					local curr
+					for k,v in pairs(ents.FindByClass("ent_zone_point"))do
+						if v:GetZoneID() == id then curr = v break end
+					end
+					local next = curr
+					repeat
+						next.Resizing = self.Owner
+						
+						next = next:GetNext()
+						
+						
+					until ( next == curr )
+					
+					self:SetCurrentPoint(curr)
+					
+				end
 			end
 		end
 		
