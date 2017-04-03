@@ -196,7 +196,7 @@ if SERVER then
 			
 		until (cur == ent)
 		
-		zones.CalcBounds(zone)
+		zones.CalcBounds(zone,true)
 		
 		zones.List[id] = zone
 		hook.Run("OnZoneCreated",zone,zone.class,id)
@@ -208,7 +208,7 @@ if SERVER then
 		
 	end
 	
-	function zones.CalcBounds(zone)
+	function zones.CalcBounds(zone,newZone)
 		zone.bounds = {}
 		for areanum,area in pairs(zone.points)do
 			local mins,maxs = Vector(10000000,10000000,area[1].z), Vector(-10000000,-10000000,area[1].z + zone.height[areanum])
@@ -219,6 +219,9 @@ if SERVER then
 				mins.y = math.min(pos.y, mins.y)
 			end
 			zone.bounds[areanum] = {mins=mins,maxs=maxs}
+		end
+		if not newZone then
+			hook.Run("OnZoneChanged",zones.List[id],zones.List[id].class,id)
 		end
 	end
 	
