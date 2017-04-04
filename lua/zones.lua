@@ -226,9 +226,9 @@ if SERVER then
 			for k,pos in pairs(area) do
 				maxs.x = math.max(pos.x, maxs.x)
 				maxs.y = math.max(pos.y, maxs.y)
-				maxs.z = math.max(pos.z, maxs.z)
+				maxs.z = math.max(pos.z+zone.height[areanum], maxs.z)
 				mins.x = math.min(pos.x, mins.x)
-				mins.y = math.min(pos.x, mins.x)
+				mins.y = math.min(pos.y, mins.y)
 				mins.z = math.min(pos.z, mins.z)
 			end
 		end
@@ -348,48 +348,47 @@ if SERVER then
 	end
 	
 	
-	local mapMins = -16000 
-	local mapMaxs = 16000 
-	local mapSize = 32000 
+	local mapMins = -16000
+	local mapMaxs = 16000
+	local mapSize = 32000
 	local chunkSize = 128
-	function zones.GetZoneIndex(pos)
+
+	local function GetZoneIndex(pos)
 
 		local x = math.Remap(pos.x, mapMins, mapMaxs, 0, mapSize)
 		local y = math.Remap(pos.y, mapMins, mapMaxs, 0, mapSize)
 		local z = math.Remap(pos.z, mapMins, mapMaxs, 0, mapSize)
-		
+
 		local idxX = math.floor(x / chunkSize)
 		local idxY = math.floor(y / chunkSize)
 		local idxZ = math.floor(z / chunkSize)
 		local idx = bit.bor(bit.lshift(idxX, 24), bit.lshift(idxY, 14), idxZ)
 
-		return idx 
-		
-	end 
-	
-	
+		return idx
+
+	end
+
 	function zones.SortMap()
 		zones.Map = {}
-		
-		for x=mapMins, mapMaxs, chunkSize do
-			zones.Map[x] = {}
-			for y=mapMins, mapMaxs, chunkSize do
-				zones.Map[x][y] = {}
-				for z=mapMins, mapMaxs, chunkSize do
-					zones.Map[x][y][z] = {}
-					for id,zone in pairs(zones.List)do
-						
-						local mins, maxs = zone.bounds.mins, zone.bounds.maxs
-						
-						if Vector(x,y,z):WithinAABox(mins,maxs) then
-							
-							zones.Map[x][y][z][#zones.Map[x][y][z]+1] = zone
-							
-						end
-					end	
+		for _, zone in pairs(zones.List) do
+			local mins = zone.bounds.mins
+			local maxs = zone.bounds.maxs
+
+			for x = mins.x, maxs.z, chunkSize do
+				for y = mins.y, maxs.y, chunkSize do
+					for z = mins.z, maxs.z, chunkSize do
+						local idx = GetZoneIndex(Vector(x, y, z))
+						zones.Map[idx] = zones.Map[idx] or {}
+						table.insert(zones.Map[idx], zone)
+					end
 				end
 			end
 		end
+	end
+
+	function zones.GetNearbyZones(pos)
+		local idx = GetZoneIndex(pos)
+		return zones.Map[idx]
 	end
 	
 	hook.Add("InitPostEntity","zones_load",function()
