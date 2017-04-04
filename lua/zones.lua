@@ -308,7 +308,7 @@ if SERVER then
                 mins.z = math.min(pos.z, mins.z)
             end
         end
-        zone.bounds = {mins=mins,maxs=maxs}
+        zone.bounds = {["mins"]=mins,["maxs"]=maxs}
         if not newZone then
             hook.Run("OnZoneChanged",zone,zone.class,zones.GetID(zone))
         end
@@ -382,7 +382,7 @@ if SERVER then
 
 	function zones.Split(id,areanum)
 		local zone = zones.List[id]
-		local pts, h, bound = zone.points[areanum], zone.height[areanum], zone.bounds[areanum]
+		local pts, h, bound = zone.points[areanum], zone.height[areanum]
 
 		table.remove(zone.points,areanum)
 		table.remove(zone.height,areanum)
