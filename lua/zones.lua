@@ -1,6 +1,6 @@
 local version = 1.20 -- Older versions will not run if a newer version is used in another script.
 --[[
-	ZONES - by Bobbleheadbob
+	ZONES - by Bobbleheadbob with help from Zeh Matt
 		WARNING: If you edit any of these files, make them use a different namespace. Multiple scripts may depend on this library so modifying it can break other scripts.
 
 	Purpose:
@@ -65,54 +65,6 @@ zones.Classes = zones.Classes or {}
 zones.List = zones.List or {}
 zones.Map = zones.Map or {}
 
-local mapMins = -16000
-local mapMaxs = 16000
-local mapSize = 32000
-local chunkSize = 128
-
-local function GetZoneIndex(pos)
-
-	local x = pos.x + mapMaxs
-	local y = pos.y + mapMaxs
-	local z = pos.z + mapMaxs
-
-	local idxX = math.floor(x / chunkSize)
-	local idxY = math.floor(y / chunkSize)
-	local idxZ = math.floor(z / chunkSize)
-	local idx = bit.bor(bit.lshift(idxX, 24), bit.lshift(idxY, 14), idxZ)
-
-	return idx
-
-end
-
-local function Floor(x,to)
-    return math.floor(x / to) * to
-end
-local function Ceil(x,to)
-    return math.ceil(x / to) * to
-end
- 
-function zones.CreateZoneMapping()
-    zones.Map = {}
-    for _, zone in pairs(zones.List) do
-        local mins = zone.bounds.mins
-        local maxs = zone.bounds.maxs
-        for x = Floor(mins.x,chunkSize), Ceil(maxs.x + 1,chunkSize), chunkSize do
-            for y = Floor(mins.y,chunkSize), Ceil(maxs.y + 1,chunkSize), chunkSize do
-                for z = Floor(mins.z,chunkSize), Ceil(maxs.z + 1,chunkSize), chunkSize do
-                    local idx = GetZoneIndex(Vector(x, y, z))
-                    zones.Map[idx] = zones.Map[idx] or {}
-                    table.insert(zones.Map[idx], zone)
-                end
-            end
-        end
-    end
-end
-
-function zones.GetNearbyZones(pos)
-	local idx = GetZoneIndex(pos)
-	return zones.Map[idx] or {}
-end
 
 //Common interface functions:
 
@@ -198,6 +150,59 @@ function zones.GetID(zone)
 	return table.KeyFromValue(zones.List,zone)
 end
 
+
+
+
+//Getting into the meat of the API:
+local mapMins = -16000
+local mapMaxs = 16000
+local mapSize = 32000
+local chunkSize = 128
+
+local function GetZoneIndex(pos)
+
+	local x = pos.x + mapMaxs
+	local y = pos.y + mapMaxs
+	local z = pos.z + mapMaxs
+
+	local idxX = math.floor(x / chunkSize)
+	local idxY = math.floor(y / chunkSize)
+	local idxZ = math.floor(z / chunkSize)
+	local idx = bit.bor(bit.lshift(idxX, 24), bit.lshift(idxY, 14), idxZ)
+
+	return idx
+
+end
+
+local function Floor(x,to)
+    return math.floor(x / to) * to
+end
+local function Ceil(x,to)
+    return math.ceil(x / to) * to
+end
+ 
+function zones.CreateZoneMapping()
+    zones.Map = {}
+    for _, zone in pairs(zones.List) do
+        local mins = zone.bounds.mins
+        local maxs = zone.bounds.maxs
+        for x = Floor(mins.x,chunkSize), Ceil(maxs.x + 1,chunkSize), chunkSize do
+            for y = Floor(mins.y,chunkSize), Ceil(maxs.y + 1,chunkSize), chunkSize do
+                for z = Floor(mins.z,chunkSize), Ceil(maxs.z + 1,chunkSize), chunkSize do
+                    local idx = GetZoneIndex(Vector(x, y, z))
+                    zones.Map[idx] = zones.Map[idx] or {}
+                    table.insert(zones.Map[idx], zone)
+                end
+            end
+        end
+    end
+end
+
+function zones.GetNearbyZones(pos)
+	local idx = GetZoneIndex(pos)
+	return zones.Map[idx] or {}
+end
+
 zones.Cache = {}
 local function ClearCache()
 	for k,v in pairs(player.GetAll()) do
@@ -207,7 +212,6 @@ end
 ClearCache()
 hook.Add("Tick","zones_cache",ClearCache)
 
-//Getting into the meat of the API:
 if SERVER then
 	util.AddNetworkString("zones_sync")
 	util.AddNetworkString("zones_class")
