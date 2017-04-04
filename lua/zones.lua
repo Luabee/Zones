@@ -88,9 +88,9 @@ end
 function zones.GetZoneAt(pos,class) --works like above, except uses any point.
 	for k,zone in pairs(zones.List) do
 		if class and class != zone.class then continue end
+		if not pos:WithinAABox(zone.bounds.mins,zone.bounds.maxs) then continue end
 		
 		for k1, points in pairs(zone.points) do
-			if not pos:WithinAABox(zone.bounds[k1].mins,zone.bounds[k1].maxs) then continue end
 			if zones.PointInPoly(pos,points) then
 				local z = points[1].z
 				if pos.z >= z and pos.z < z + zone.height[k1] then
@@ -105,8 +105,8 @@ function zones.GetZonesAt(pos,class) --works like above, except uses any point.
 	local tbl = {}
 	for k,zone in pairs(zones.List) do
 		if class and class != zone.class then continue end
+		if not pos:WithinAABox(zone.bounds.mins,zone.bounds.maxs) then continue end
 		for k1, points in pairs(zone.points) do
-			if not pos:WithinAABox(zone.bounds[k1].mins,zone.bounds[k1].maxs) then continue end
 			if zones.PointInPoly(pos,points) then
 				local z = points[1].z
 				if pos.z >= z and pos.z < z + zone.height[k1] then
@@ -182,6 +182,7 @@ if SERVER then
 				syncply = nil
 			else
 				net.Broadcast()
+				zones.SortMap()
 			end
 			sync = false
 		end
@@ -220,17 +221,18 @@ if SERVER then
 	end
 	
 	function zones.CalcBounds(zone,newZone)
-		zone.bounds = {}
+		local mins,maxs = Vector(10000000,10000000,10000000), Vector(-10000000,-10000000,-10000000)
 		for areanum,area in pairs(zone.points)do
-			local mins,maxs = Vector(10000000,10000000,area[1].z), Vector(-10000000,-10000000,area[1].z + zone.height[areanum])
 			for k,pos in pairs(area) do
 				maxs.x = math.max(pos.x, maxs.x)
 				maxs.y = math.max(pos.y, maxs.y)
+				maxs.z = math.max(pos.z, maxs.z)
 				mins.x = math.min(pos.x, mins.x)
-				mins.y = math.min(pos.y, mins.y)
+				mins.y = math.min(pos.x, mins.x)
+				mins.z = math.min(pos.z, mins.z)
 			end
-			zone.bounds[areanum] = {mins=mins,maxs=maxs}
 		end
+		zone.bounds = {mins=mins,maxs=maxs}
 		if not newZone then
 			hook.Run("OnZoneChanged",zone,zone.class,zones.GetID(zone))
 		end
@@ -292,9 +294,9 @@ if SERVER then
 		
 		table.Add(zto.points, zfrom.points)
 		table.Add(zto.height, zfrom.height)
-		table.Add(zto.bounds, zfrom.bounds)
 		
 		zones.Remove(from)
+		zones.CalcBounds(to)
 		
 		hook.Run("OnZoneMerged",zto,zto.class,to,zfrom,zfrom.class,from)
 		
@@ -308,7 +310,6 @@ if SERVER then
 		
 		table.remove(zone.points,areanum)
 		table.remove(zone.height,areanum)
-		table.remove(zone.bounds,areanum)
 		
 		if #zone.points == 0 then
 			zones.Remove(id)
@@ -317,10 +318,12 @@ if SERVER then
 		local new = table.Copy(zone)
 		new.points = {pts}
 		new.height = {h}
-		new.bounds = {bound}
 		
 		local id = table.maxn(zones.List)+1
 		zones.List[id] = new
+		
+		zones.CalcBounds(zone)
+		zones.CalcBounds(new)
 		
 		hook.Run("OnZoneSplit",new,new.class,id,zone,id)
 		
@@ -342,6 +345,51 @@ if SERVER then
 		hook.Run("OnZoneCreated",new,class,id)
 		
 		zones.Sync()
+	end
+	
+	
+	local mapMins = -16000 
+	local mapMaxs = 16000 
+	local mapSize = 32000 
+	local chunkSize = 128
+	function zones.GetZoneIndex(pos)
+
+		local x = math.Remap(pos.x, mapMins, mapMaxs, 0, mapSize)
+		local y = math.Remap(pos.y, mapMins, mapMaxs, 0, mapSize)
+		local z = math.Remap(pos.z, mapMins, mapMaxs, 0, mapSize)
+		
+		local idxX = math.floor(x / chunkSize)
+		local idxY = math.floor(y / chunkSize)
+		local idxZ = math.floor(z / chunkSize)
+		local idx = bit.bor(bit.lshift(idxX, 24), bit.lshift(idxY, 14), idxZ)
+
+		return idx 
+		
+	end 
+	
+	
+	function zones.SortMap()
+		zones.Map = {}
+		
+		for x=mapMins, mapMaxs, chunkSize do
+			zones.Map[x] = {}
+			for y=mapMins, mapMaxs, chunkSize do
+				zones.Map[x][y] = {}
+				for z=mapMins, mapMaxs, chunkSize do
+					zones.Map[x][y][z] = {}
+					for id,zone in pairs(zones.List)do
+						
+						local mins, maxs = zone.bounds.mins, zone.bounds.maxs
+						
+						if Vector(x,y,z):WithinAABox(mins,maxs) then
+							
+							zones.Map[x][y][z][#zones.Map[x][y][z]+1] = zone
+							
+						end
+					end	
+				end
+			end
+		end
 	end
 	
 	hook.Add("InitPostEntity","zones_load",function()
