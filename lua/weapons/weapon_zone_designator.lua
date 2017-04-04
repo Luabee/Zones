@@ -54,7 +54,7 @@ SWEP.AutoSwitchTo = true
 SWEP.Primary.ClipSize = -1
 SWEP.Primary.DefaultClip = -1
 SWEP.Primary.Automatic = false
-SWEP.Primary.Delay = .5
+SWEP.Primary.Delay = .1
 SWEP.Primary.Ammo = "none"
 
 SWEP.Secondary.ClipSize = -1
@@ -132,7 +132,7 @@ end
 
 function SWEP:PrimaryAttack()
 	
-	
+	self:SetNextPrimaryFire(CurTime()+self.Primary.Delay)
 	self:SendWeaponAnim( ACT_VM_PRIMARYATTACK )
 	
 	if SERVER then
@@ -239,6 +239,7 @@ function SWEP:PrimaryAttack()
 end
 
 function SWEP:SecondaryAttack()
+	self:SetNextSecondaryFire(CurTime()+self.Primary.Delay)
 	self:SendWeaponAnim( ACT_VM_PRIMARYATTACK )
 	
 	if CLIENT then return end
@@ -437,12 +438,12 @@ function SWEP:PlacePoint() --mode == 1
 				
 				local p = curr:GetPos()
 				local pos
+				left.z = p.z
+				right.z = p.z
 				-- if left:DistToSqr(p) > right:DistToSqr(p) then
 				if left:DistToSqr(tr.HitPos) < right:DistToSqr(tr.HitPos) then
-					left.z = p.z
 					pos = left
 				else
-					right.z = p.z
 					pos = right
 				end
 				
@@ -573,7 +574,7 @@ function SWEP:GetWallFill(tr)
 		curright = trace.endpos
 		
 		if r.Hit then
-			curleft = r.HitPos
+			curright = r.HitPos
 			break
 		else
 			wall.start = curright
