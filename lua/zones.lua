@@ -1,4 +1,4 @@
-local version = 1.20 -- Older versions will not run if a newer version is used in another script.
+local version = 2.0 -- Older versions will not run if a newer version is used in another script.
 --[[
 	ZONES - by Bobbleheadbob with help from Zeh Matt
 		WARNING: If you edit any of these files, make them use a different namespace. Multiple scripts may depend on this library so modifying it can break other scripts.
