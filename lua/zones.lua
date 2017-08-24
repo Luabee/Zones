@@ -1,5 +1,6 @@
+
 AddCSLuaFile()
-local version = 1.20 -- Older versions will not run if a newer version is used in another script.
+local version = 2 -- Older versions will not run if a newer version is used in another script.
 --[[
 	ZONES - by Bobbleheadbob with help from Zeh Matt
 		WARNING: If you edit any of these files, make them use a different namespace. Multiple scripts may depend on this library so modifying it can break other scripts.
@@ -37,6 +38,7 @@ local version = 1.20 -- Older versions will not run if a newer version is used i
 
 local table, math, Vector, pairs, ipairs, ents, bit, print, unpack, debug, util, hook, net, vgui, tostring, player_GetAll, file, ErrorNoHalt, FindMetaTable = table, math, Vector, pairs, ipairs, ents, bit, print, unpack, debug, util, hook, net, vgui, tostring, player.GetAll, file, ErrorNoHalt, FindMetaTable
 
+
 if zones then
 	local diff = math.abs(math.floor(version)-math.floor(zones.version)) > 0
 	if diff then
@@ -66,14 +68,15 @@ zones.Classes = zones.Classes or {}
 zones.List = zones.List or {}
 zones.Map = zones.Map or {}
 
+include("zone.lua")
 
 //Common interface functions:
 
 -- Registers a zone class which can then be created using weapon_zone_designator
-function zones.RegisterClass(class,color)
-	zones.Classes[class] = color
+function zones.RegisterClass(name, class)
+	zones.Classes[name] = class
+	print("Registered class: " .. name)
 end
-
 
 local plymeta = FindMetaTable("Player")
 --returns one of the zones a player is found in. Also returns that zone's ID. Class is optional to filter the search.
@@ -95,16 +98,16 @@ function zones.GetZoneAt(pos,class) --works like above, except uses any point.
 	local nearby = zones.GetNearbyZones(pos)
 
 	for k,zone in pairs(nearby) do
-
-		if class and class != zone.class then continue end
-		if not pos:WithinAABox(zone.bounds.mins, zone.bounds.maxs) then
+		local data = zone.data
+		if class and class != data.class then continue end
+		if not pos:WithinAABox(data.bounds.mins, data.bounds.maxs) then
 			continue
 		end
 
-		for k1, points in pairs(zone.points) do
+		for k1, points in pairs(data.points) do
 			if zones.PointInPoly(pos,points) then
 				local z = points[1].z
-				if pos.z >= z and pos.z < z + zone.height[k1] then
+				if pos.z >= z and pos.z < z + data.height[k1] then
 					return zone,k
 				end
 			end
@@ -119,12 +122,13 @@ function zones.GetZonesAt(pos,class) --works like above, except uses any point.
 	local tbl = {}
 	local nearby = zones.GetNearbyZones(pos)
 	for k,zone in pairs(nearby) do
-		if class and class != zone.class then continue end
-		if not pos:WithinAABox(zone.bounds.mins,zone.bounds.maxs) then continue end
-		for k1, points in pairs(zone.points) do
+		local data = zone.data
+		if class and class != data.class then continue end
+		if not pos:WithinAABox(data.bounds.mins,data.bounds.maxs) then continue end
+		for k1, points in pairs(data.points) do
 			if zones.PointInPoly(pos,points) then
 				local z = points[1].z
-				if pos.z >= z and pos.z < z + zone.height[k1] then
+				if pos.z >= z and pos.z < z + data.height[k1] then
 					tbl[k] = zone
 				end
 			end
@@ -181,12 +185,13 @@ end
 local function Ceil(x,to)
     return math.ceil(x / to) * to
 end
- 
+
 function zones.CreateZoneMapping()
     zones.Map = {}
     for _, zone in pairs(zones.List) do
-        local mins = zone.bounds.mins
-        local maxs = zone.bounds.maxs
+		local data = zone.data
+        local mins = data.bounds.mins
+        local maxs = data.bounds.maxs
         for x = Floor(mins.x,chunkSize), Ceil(maxs.x + 1,chunkSize), chunkSize do
             for y = Floor(mins.y,chunkSize), Ceil(maxs.y + 1,chunkSize), chunkSize do
                 for z = Floor(mins.z,chunkSize), Ceil(maxs.z + 1,chunkSize), chunkSize do
@@ -208,7 +213,7 @@ zones.Cache = {}
 local function ClearCache()
 	for k,v in ipairs(player_GetAll()) do
 		zones.Cache[v] = {}
-	end	
+	end
 end
 ClearCache()
 hook.Add("Tick","zones_cache",ClearCache)
@@ -221,24 +226,43 @@ if SERVER then
 		if not file.Exists("zones","DATA") then
 			file.CreateDir("zones")
 		end
-		file.Write("zones/"..game.GetMap():gsub("_","-"):lower()..".txt", util.TableToJSON(zones.List))
+
+		local data = {}
+		for k,v in pairs(zones.List) do
+			data[k] = v.data
+		end
+
+		file.Write("zones/"..game.GetMap():gsub("_","-"):lower()..".txt", util.TableToJSON(data))
 	end
+
 	concommand.Add("zone_save",function(ply,c,a)
 		if not ply:IsAdmin() then return end
 		zones.SaveZones()
 	end)
 
 	function zones.LoadZones()
+
 		local tbl = file.Read("zones/"..game.GetMap():gsub("_","-"):lower()..".txt", "DATA")
-		zones.List = tbl and util.JSONToTable(tbl) or {}
+		local list = {}
+		local data = tbl and util.JSONToTable(tbl) or {}
+
+		for k,v in pairs(data) do
+			local class = zones.Classes[v.class]
+			local zone = table.Copy(class)
+			zone.data = v
+			setmetatable(zone, zones.ZONE_META)
+			list[k] = zone
+		end
+
+		zones.List = list
 
 		//Update legacy files:
-		for k,v in pairs(zones.List)do
-			if not v.bounds then
-				zones.CalcBounds(v)
+		for id,zone in pairs(zones.List) do
+			if not zone.data.bounds then
+				zones.CalcBounds(zone)
 			end
-
-			hook.Run("OnZoneLoaded",v,v.class,k)
+			zone:Initialize()
+			hook.Run("OnZoneLoaded",zone,zone.data.class,id)
 		end
 	end
 
@@ -252,8 +276,13 @@ if SERVER then
 
 	hook.Add("Tick","zones_sync",function()
 		if sync then
+			print("Syncing")
+			local list = {}
+			for k,v in pairs(zones.List) do
+				list[k] = v.data
+			end
 			net.Start("zones_sync")
-			net.WriteTable(zones.List)
+			net.WriteTable(list)
 			if syncply then
 				net.Send(syncply)
 				syncply = nil
@@ -267,18 +296,32 @@ if SERVER then
 
 	function zones.CreateZoneFromPoint(ent)
 
-		local zone = {
-			points = {{}}, --only 1 area when creating a new zone.
-			height = {ent:GetTall()},
-			class = ent:GetZoneClass(),
-			bounds = {}
-		}
+		local className = ent:GetZoneClass()
+		local class = zones.Classes[className]
+
+		if class == nil then
+			error("Class not registered")
+			return
+		end
 
 		local id = table.maxn(zones.List) + 1
+
+		local zone = table.Copy(class)
+		local data = {
+			points = {{}},
+			height = { ent:GetTall() },
+			class = ent:GetZoneClass(),
+			bounds = {},
+			color = zone.Color,
+			id = id,
+		}
+		zone.data = data
+		setmetatable(zone, zones.ZONE_META)
+
 		local cur = ent
 		repeat
 			local pos = cur:GetPos() - Vector(0,0,2)
-			zone.points[1][#zone.points[1]+1] = pos
+			data.points[1][#data.points[1]+1] = pos
 
 			cur:SetZoneID(id)
 			cur = cur:GetNext()
@@ -288,10 +331,11 @@ if SERVER then
 		zones.CalcBounds(zone,true)
 
 		zones.List[id] = zone
-		hook.Run("OnZoneCreated",zone,zone.class,id)
+		hook.Run("OnZoneCreated",zone, zone.data.class,id)
+
+		zone:Initialize()
 
 		zones.Sync()
-
 
 		return zone, id
 
@@ -299,23 +343,32 @@ if SERVER then
 
 	function zones.CalcBounds(zone,newZone)
         local mins,maxs = Vector(10000000,10000000,10000000), Vector(-10000000,-10000000,-10000000)
-        for areanum,area in pairs(zone.points)do
+		local data = zone.data
+        for areanum,area in pairs(data.points)do
             for k,pos in pairs(area) do
                 maxs.x = math.max(pos.x, maxs.x)
                 maxs.y = math.max(pos.y, maxs.y)
-                maxs.z = math.max(pos.z+zone.height[areanum], maxs.z)
+                maxs.z = math.max(pos.z+data.height[areanum], maxs.z)
                 mins.x = math.min(pos.x, mins.x)
                 mins.y = math.min(pos.y, mins.y)
                 mins.z = math.min(pos.z, mins.z)
             end
         end
-        zone.bounds = {["mins"]=mins,["maxs"]=maxs}
+        data.bounds = {["mins"]=mins,["maxs"]=maxs}
         if not newZone then
-            hook.Run("OnZoneChanged",zone,zone.class,zones.GetID(zone))
+            hook.Run("OnZoneChanged",zone,data.class,zones.GetID(zone))
         end
     end
 
 	function zones.Remove(id)
+		local zone = zones.List[id]
+		if zone == nil then
+			error("Trying to remove non-existing zone")
+			return
+		end
+		if zone.OnRemove ~= nil then
+			zone:OnRemove()
+		end
 		hook.Run("OnZoneRemoved",zones.List[id],zones.List[id].class,id)
 		zones.List[id] = nil
 		zones.Sync()
@@ -328,8 +381,8 @@ if SERVER then
 
 		--create new
 		for id,zone in pairs(zones.List)do
-
-			for k, area in pairs(zone.points) do
+			local data = zone.data
+			for k, area in pairs(data.points) do
 
 				local first
 				local curr
@@ -348,8 +401,8 @@ if SERVER then
 
 					next.LastPoint = curr
 					curr = next
-					next:SetTall(zone.height[k])
-					next:SetZoneClass(zone.class)
+					next:SetTall(data.height[k])
+					next:SetZoneClass(data.class)
 					next:Spawn()
 					next:SetZoneID(id)
 					next:SetAreaNumber(k)
@@ -369,13 +422,13 @@ if SERVER then
 
 		local zfrom, zto = zones.List[from], zones.List[to]
 
-		table.Add(zto.points, zfrom.points)
-		table.Add(zto.height, zfrom.height)
+		table.Add(zto.data.points, zfrom.data.points)
+		table.Add(zto.data.height, zfrom.data.height)
 
 		zones.Remove(from)
 		zones.CalcBounds(to)
 
-		hook.Run("OnZoneMerged",zto,zto.class,to,zfrom,zfrom.class,from)
+		hook.Run("OnZoneMerged",zto,zto.data.class,to,zfrom,zfrom.data.class,from)
 
 		zones.Sync()
 
@@ -383,18 +436,22 @@ if SERVER then
 
 	function zones.Split(id,areanum)
 		local zone = zones.List[id]
-		local pts, h, bound = zone.points[areanum], zone.height[areanum]
+		local data = zone.data
+		local pts, h, bound = data.points[areanum], data.height[areanum]
 
-		table.remove(zone.points,areanum)
-		table.remove(zone.height,areanum)
+		table.remove(data.points,areanum)
+		table.remove(data.height,areanum)
 
-		if #zone.points == 0 then
+		if #data.points == 0 then
 			zones.Remove(id)
 		end
 
 		local new = table.Copy(zone)
-		new.points = {pts}
-		new.height = {h}
+		local newData = table.Copy(data)
+		newData.points = {pts}
+		newData.height = {h}
+		new.data = newData
+		setmetatable(new, zones.ZONE_META)
 
 		local id = table.maxn(zones.List)+1
 		zones.List[id] = new
@@ -410,16 +467,23 @@ if SERVER then
 
 	end
 
-	function zones.ChangeClass(id,class)
-		local zone,new = zones.List[id],{}
-		new.points = zone.points
-		new.height = zone.height
-		new.bounds = zone.bounds
-		new.class = class
+	function zones.ChangeClass(id, className)
+		local zone = zones.List[id]
+		local class = zones.Classes[className]
 
-		zones.List[id] = new
+		if class == nil then
+			error("Class not registered")
+			return
+		end
 
-		hook.Run("OnZoneCreated",new,class,id)
+		local newZone = table.Copy(class)
+		newZone.data = zone.data
+		newZone.data.class = className
+		setmetatable(newZone, zones.ZONE_META)
+
+		zones.List[id] = newZone
+
+		hook.Run("OnZoneCreated",newZone,className,id)
 
 		zones.Sync()
 	end
@@ -468,15 +532,39 @@ if SERVER then
 	end)
 
 else
+
 	net.Receive("zones_sync",function(len)
-		zones.List = net.ReadTable()
+
+		local list = net.ReadTable()
+		local newList = {}
+
+		for k,v in pairs(list) do
+			local zoneData = v
+			local class = zones.Classes[zoneData.class]
+			local zone = table.Copy(class)
+			zone.data = zoneData
+			setmetatable(zone, zones.ZONE_META)
+			if zones.List[k] == nil and zone.Initialize ~= nil then
+				zone:Initialize()
+			end
+			newList[k] = zone
+		end
+
+		for k,zone in pairs(zones.List) do
+			if newList[k] == nil and zone.OnRemove ~= nil then
+				zone:OnRemove()
+			end
+		end
+
+		zones.List = newList
 		zones.CreateZoneMapping()
+
 	end)
 
 	function zones.ShowOptions(id)
 
 		local zone = zones.List[id]
-		local class = zone.class
+		local class = zone.data.class
 
 		local frame = vgui.Create("DFrame")
 		zones.optionsFrame = frame
