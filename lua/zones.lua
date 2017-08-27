@@ -199,8 +199,10 @@ function zones.CreateZoneMapping()
 end
 
 function zones.GetNearbyZones(pos)
-	local idx = GetZoneIndex(pos)
-	return zones.Map[idx] or {}
+	//This system isn't working.
+	-- local idx = GetZoneIndex(pos)
+	-- return zones.Map[idx] or {}
+	return zones.List
 end
 
 zones.Cache = {}
@@ -371,8 +373,8 @@ if SERVER then
 		table.Add(zto.points, zfrom.points)
 		table.Add(zto.height, zfrom.height)
 
+		zones.CalcBounds(zto)
 		zones.Remove(from)
-		zones.CalcBounds(to)
 
 		hook.Run("OnZoneMerged",zto,zto.class,to,zfrom,zfrom.class,from)
 
