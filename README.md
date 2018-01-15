@@ -5,6 +5,10 @@ If you have a universially beneficial change, please consider making a pull requ
 ## Purpose: ##
 For easy in-game designation of persistent polygonal zones which are used by any script.
 
+## Installation: ##
+- This is a shared file so include it in any shared environment. Also include ent_zone_point and weapon_zone_designator as a shared ent and weapon.
+- You should not put this file directly in lua/autorun.
+
 ## How to Use: ##
 - All zones are saved in zones.List as tables.
 - Zone creation is handled with weapon_zone_designator and ent_zone_point, but can be in code as well.
@@ -18,9 +22,5 @@ For easy in-game designation of persistent polygonal zones which are used by any
 
 - Use zones.FindByClass() to find all zones which are of a given class.
 - Use ply:GetCurrentZone() to find the zone that a player is standing in.
-
-## Installation: ##
-- This is a shared file so include it in any shared environment. Also include ent_zone_point and weapon_zone_designator as a shared ent and weapon.
-- You should not put this file directly in lua/autorun.
 
 *Enjoy! ~Bobbleheadbob*
