@@ -158,7 +158,6 @@ function zones.FindClosest( class, pos )
     
     local target = -1 --Var for current closest Zone ID
     local dist = -1 --Var for distance to closest Zone
-    local loc = Vector(0,0,0) --Var for expensive distance calc.
     
     for id,data in pairs(zone) do --For each zone
         for _,bound in pairs(data.bounds) do --For each bound.
@@ -168,16 +167,14 @@ function zones.FindClosest( class, pos )
                 
                 target = id
                 dist = tempDist
-                loc = bound
                     
             end
             
         end
     end
     
-    if not (target == -1) then --Get "expensive" Distance
-        dist = pos:Distance( loc )
-        return target, dist
+    if not (target == -1) then
+        return target, math.sqrt(dist) 
     end
     
     return
