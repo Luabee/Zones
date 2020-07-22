@@ -150,7 +150,7 @@ function zones.GetID(zone)
 	return table.KeyFromValue(zones.List,zone)
 end
 
---Returns Zone ID and distance from given Pos (Takes: Class, Pos Returns: Zone, Distance)
+--Returns Zone ID and distance from given Pos (Takes: Class, Pos Returns: Zone ID, Distance)
 function zones.FindClosest( class, pos )
     if pos == nil then pos = Vector(0,0,0) end
     
