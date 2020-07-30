@@ -134,7 +134,7 @@ end
 
 --Gets a list of all zones which are of the specified class.
 function zones.FindByClass(class)
-	if class == nil then return zones.List end
+	if (not isstring(class)) then return zones.List end
 	if class == "" then return zones.List end
 	
 	local tbl = {}
