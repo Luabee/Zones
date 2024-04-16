@@ -1,4 +1,4 @@
-# ZONES - by Bobbleheadbob #
+# ZONES - by Bobblehead #
 **WARNING: If you edit any of these files, make them use a different namespace. Multiple scripts may depend on this library so modifying it can break other scripts.**
 If you have a universially beneficial change, please consider making a pull request. :)
 
@@ -24,4 +24,4 @@ https://www.youtube.com/watch?v=Cht0jQBcVL8
 - Use zones.FindByClass() to find all zones which are of a given class.
 - Use ply:GetCurrentZone() to find the zone that a player is standing in.
 
-*Enjoy! ~Bobbleheadbob*
+*Enjoy! ~Bobblehead*
