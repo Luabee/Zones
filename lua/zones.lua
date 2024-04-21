@@ -150,6 +150,36 @@ function zones.GetID(zone)
 	return table.KeyFromValue(zones.List,zone)
 end
 
+--Returns Zone ID and distance from given Pos (Takes: Class, Pos Returns: Zone ID, Distance)
+function zones.FindClosest( class, pos )
+    if pos == nil then pos = Vector(0,0,0) end
+    
+    local zone = zones.FindByClass( class )
+    
+    local target = -1 --Var for current closest Zone ID
+    local dist = -1 --Var for distance to closest Zone
+    
+    for id,data in pairs(zone) do --For each zone
+        for _,bound in pairs(data.bounds) do --For each bound.
+            
+            local tempDist = pos:DistToSqr( bound )
+            if tempDist < dist or target == -1 then
+                
+                target = id
+                dist = tempDist
+                    
+            end
+            
+        end
+    end
+    
+    if not (target == -1) then
+        return target, math.sqrt(dist) 
+    end
+    
+    return
+end
+
 
 
 
